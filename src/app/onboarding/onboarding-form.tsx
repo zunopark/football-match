@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -28,11 +29,22 @@ export function OnboardingForm({ defaultNickname }: { defaultNickname: string })
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <Checkbox id="terms" name="terms" required />
-        <Label htmlFor="terms" className="font-normal">
-          이용약관 및 개인정보 수집·이용에 동의합니다. (필수)
-        </Label>
+      <div className="flex items-start gap-2">
+        <Checkbox id="terms" name="terms" className="mt-0.5" required />
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="terms" className="font-normal leading-snug">
+            이용약관 및 개인정보 수집·이용에 동의합니다. (필수)
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            <Link href="/terms" target="_blank" className="underline underline-offset-2">
+              이용약관
+            </Link>
+            {" · "}
+            <Link href="/privacy" target="_blank" className="underline underline-offset-2">
+              개인정보 처리방침
+            </Link>
+          </p>
+        </div>
       </div>
 
       {state.error ? (
