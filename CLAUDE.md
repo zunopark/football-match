@@ -72,7 +72,22 @@
 
 - 카카오 콘솔 [카카오 로그인] > **OpenID Connect 활성화** (없으면 `id_token` 미발급)
 - 카카오 콘솔 [카카오 로그인] > Redirect URI 에 `{origin}/auth/kakao/callback` 등록
+- 카카오 콘솔 [카카오 로그인] > 보안 의 Client Secret (없으면 토큰 교환이 `KOE010` 으로 실패)
 - `.env` 의 `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`
+- **Supabase > Authentication > Email provider 의 "Confirm email" OFF** (= `mailer_autoconfirm: true`)
+
+  GoTrue 는 `이메일 미검증 AND mailer_autoconfirm 꺼짐` 이면
+  `Unverified email with kakao. Verify the email with kakao in order to sign in` 으로 거부한다.
+  `account_email` 동의를 받지 않으므로 `id_token` 에 검증된 이메일 클레임이 없어 이 검사에 걸린다.
+
+  이 설정만 켜두면 검증 안 된 이메일로 ID/비밀번호 가입이 가능해지므로,
+  문서 2.1(비밀번호 회원가입 미지원)에 맞춰 **Email provider 자체를 비활성화**해 두었다.
+
+### 현재 상태 (2026-09-17 확인)
+
+구글·카카오 로그인 모두 성공. `auth.users` / `auth.identities` / `public.users` 각 2행 일치, 고아 레코드 없음.
+카카오 계정은 `auth.users.email` 이 NULL 이다 — 이메일 scope 를 요청하지 않으므로 정상이며,
+문서상 연락 수단은 경기 연락 담당자 휴대전화번호(F-08), 알림은 인앱(F-15) 이라 기능 영향은 없다.
 
 ### 인증 완료 후 할 일
 
@@ -84,8 +99,9 @@
    - `src/app/auth/kakao/callback/route.ts`
 4. `.env` / `.env.example` 에서 `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET` 제거
 5. 카카오 콘솔 Redirect URI 에서 `{origin}/auth/kakao/callback` 제거
-6. README 의 "카카오 개발자 콘솔 설정" 항목을 축소된 절차로 갱신
-7. 기존 카카오 가입 회원의 `auth.users` 레코드가 유지되는지 확인 — 동일 provider(`kakao`) + 동일 `sub` 이면 유지되지만, 전환 후 첫 로그인 시 실제로 검증할 것
+6. **Supabase > Authentication > "Confirm email" 을 다시 ON** — 카카오 우회 때문에 끈 것이므로 원복한다
+7. README 의 "카카오 개발자 콘솔 설정" 항목을 축소된 절차로 갱신
+8. 기존 카카오 가입 회원의 `auth.users` 레코드가 유지되는지 확인 — 동일 provider(`kakao`) + 동일 `sub` 이면 유지되지만, 전환 후 첫 로그인 시 실제로 검증할 것
 
 > 전환은 필수가 아니다. 서비스가 이메일을 수집·이용하지 않는다면 현재 우회 구현을 그대로 유지해도 된다.
 > 우회 구현 쪽이 요청 scope 가 더 적어 개인정보 최소 수집 원칙에는 오히려 부합한다.
