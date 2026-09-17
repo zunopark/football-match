@@ -52,6 +52,14 @@ export async function exchangeCodeForTokens(code: string, redirectUri: string) {
   const payload = await response.json();
 
   if (!response.ok) {
+    // KOE010 — client_id/client_secret 불일치.
+    // 카카오 앱이 Client Secret 을 사용 중인데 KAKAO_CLIENT_SECRET 이 비어 있는 경우가 대부분이다.
+    if (payload.error_code === "KOE010") {
+      throw new Error(
+        "카카오 인증 정보가 올바르지 않습니다. 카카오 개발자 콘솔 [카카오 로그인] > 보안 의 " +
+          "Client Secret 을 .env 의 KAKAO_CLIENT_SECRET 에 설정했는지 확인해주세요.",
+      );
+    }
     throw new Error(payload.error_description ?? payload.error ?? "카카오 토큰 발급에 실패했습니다.");
   }
   if (!payload.id_token) {

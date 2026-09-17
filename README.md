@@ -61,7 +61,20 @@ Supabase 의 카카오 기본 플로우는 `account_email profile_image profile_
 4. [카카오 로그인] > 동의항목에서 닉네임(`profile_nickname`), 프로필 사진(`profile_image`) 을 선택 동의 이상으로 설정
    (`account_email` 은 설정하지 않아도 된다)
 5. [앱 설정] > 앱 키 > REST API 키를 `.env` 의 `KAKAO_REST_API_KEY` 에 입력
-6. [카카오 로그인] > 보안 에서 Client Secret 을 사용 중이면 `.env` 의 `KAKAO_CLIENT_SECRET` 에 입력
+6. [카카오 로그인] > 보안 의 Client Secret 을 `.env` 의 `KAKAO_CLIENT_SECRET` 에 입력
+   (활성화 상태가 "사용함" 이면 필수. 빠지면 토큰 교환이 `KOE010 Bad client credentials` 로 실패한다)
+
+설정이 맞는지는 더미 code 로 토큰 엔드포인트를 때려 확인할 수 있다.
+`KOE010` 이면 자격 증명이 틀린 것이고, `KOE320`(invalid_grant) 이면 자격 증명은 정상이다.
+
+```bash
+source .env && curl -s -X POST https://kauth.kakao.com/oauth/token \
+  -d grant_type=authorization_code \
+  -d client_id=$KAKAO_REST_API_KEY \
+  -d client_secret=$KAKAO_CLIENT_SECRET \
+  -d redirect_uri=http://localhost:3000/auth/kakao/callback \
+  -d code=dummy
+```
 
 > 비즈니스 앱 전환 후 `account_email` 권한을 받으면 이 우회 구현을 제거하고
 > 구글과 동일하게 `signInWithOAuth` 로 되돌릴 수 있다.
