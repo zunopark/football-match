@@ -28,6 +28,7 @@ npm run dev            # http://localhost:3000
 | `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 관리 작업 |
 | `DATABASE_URL` | 앱 런타임 DB 접속 (Transaction pooler, 6543) |
 | `DIRECT_URL` | 마이그레이션용 DB 접속 (Session pooler, 5432) |
+| `KAKAO_REST_API_KEY` / `KAKAO_CLIENT_SECRET` | 카카오 직접 연동 (아래 카카오 설정 참고) |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` | 어드민 공유 계정 1개 (문서 15.2) |
 
 > `db.<ref>.supabase.co` 직결 주소는 IPv6 전용이라 IPv4 환경에서는 연결되지 않는다.
@@ -43,17 +44,27 @@ npm run dev            # http://localhost:3000
 
 #### 카카오 개발자 콘솔 설정
 
-Supabase 는 카카오 인가 요청 시 `account_email profile_image profile_nickname` 세 가지 scope 를
-**항상** 요청한다. (`signInWithOAuth` 의 `scopes` 옵션은 기본 scope 를 대체하지 않고 덧붙이기만 하므로
-코드로 제거할 수 없다.) 따라서 아래 동의항목이 모두 설정되어 있어야 하며, 하나라도 빠지면 `KOE205` 가 발생한다.
+Supabase 의 카카오 기본 플로우는 `account_email profile_image profile_nickname` scope 를 **항상** 요청한다.
+(`signInWithOAuth` 의 `scopes` 옵션은 기본 scope 를 대체하지 않고 덧붙이기만 해 코드로 제거할 수 없다.)
+`account_email` 은 비즈니스 앱 전환 전에는 "권한 없음" 상태라 `KOE205` 가 발생한다.
+
+그래서 카카오만 Supabase 의 authorize 엔드포인트를 거치지 않고 직접 연동한다.
+인가 요청과 토큰 교환을 `src/lib/auth/kakao.ts` 에서 수행하고,
+발급받은 OIDC `id_token` 으로 `supabase.auth.signInWithIdToken({ provider: "kakao" })` 를 호출해 세션을 만든다.
+요청 scope 는 `openid profile_nickname profile_image` 뿐이라 이메일 동의항목이 필요 없다.
+
+카카오 개발자 콘솔에서 아래를 설정한다.
 
 1. [카카오 로그인] > 활성화 설정 ON
-2. [카카오 로그인] > Redirect URI 에 `https://<프로젝트 ref>.supabase.co/auth/v1/callback` 등록
-3. [카카오 로그인] > 동의항목에서 아래 3개를 **선택 동의** 이상으로 설정
-   - 닉네임 (`profile_nickname`)
-   - 프로필 사진 (`profile_image`)
-   - 카카오계정(이메일) (`account_email`) — 필수 동의로 설정하려면 비즈니스 앱 전환 필요
-4. [앱 설정] > 플랫폼 > Web 사이트 도메인에 `http://localhost:3000` 등록
+2. [카카오 로그인] > **OpenID Connect 활성화 설정 ON** — 이게 꺼져 있으면 `id_token` 이 발급되지 않는다
+3. [카카오 로그인] > Redirect URI 에 `http://localhost:3000/auth/kakao/callback` 등록
+4. [카카오 로그인] > 동의항목에서 닉네임(`profile_nickname`), 프로필 사진(`profile_image`) 을 선택 동의 이상으로 설정
+   (`account_email` 은 설정하지 않아도 된다)
+5. [앱 설정] > 앱 키 > REST API 키를 `.env` 의 `KAKAO_REST_API_KEY` 에 입력
+6. [카카오 로그인] > 보안 에서 Client Secret 을 사용 중이면 `.env` 의 `KAKAO_CLIENT_SECRET` 에 입력
+
+> 비즈니스 앱 전환 후 `account_email` 권한을 받으면 이 우회 구현을 제거하고
+> 구글과 동일하게 `signInWithOAuth` 로 되돌릴 수 있다.
 
 ### 어드민 비밀번호
 
