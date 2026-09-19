@@ -37,6 +37,15 @@ function list(raw: RawParams, key: string): string[] {
   return value ? value.split(",").filter(Boolean) : [];
 }
 
+/**
+ * 첫 진입에는 지역을 경기도로 잡아 둔다.
+ * 서비스 초기에는 등록된 팀이 적어, 내 팀 활동 지역(시/군)으로 좁히면 화면이 비어 보이기 때문이다.
+ *
+ * 파라미터가 아예 없을 때(첫 진입)만 기본값이고, `sido=` 로 비워 보내면 "지역 제한 없음" 이다.
+ * 그래야 칩을 다 끈 상태를 URL 로 표현할 수 있다.
+ */
+export const DEFAULT_SIDO = "경기도";
+
 export function parseExploreParams(raw: RawParams, today = new Date()): ExploreParams {
   const tabs = buildDateTabs(today);
   const date = one(raw, "date");
@@ -47,10 +56,12 @@ export function parseExploreParams(raw: RawParams, today = new Date()): ExploreP
 
   const radius = Number(one(raw, "radius"));
 
+  const sidoRaw = one(raw, "sido");
+
   return {
     // 날짜 탭에 없는 값은 무시하고 오늘로 되돌린다.
     date: date && tabs.includes(date) ? date : tabs[0],
-    sido: list(raw, "sido"),
+    sido: sidoRaw === undefined ? [DEFAULT_SIDO] : list(raw, "sido"),
     levels: list(raw, "level")
       .map(Number)
       .filter((value) => Number.isInteger(value) && value >= 1 && value <= 5),
@@ -70,7 +81,8 @@ export function parseExploreParams(raw: RawParams, today = new Date()): ExploreP
 export function toQueryString(params: ExploreParams, defaultDate: string): string {
   const query = new URLSearchParams();
   if (params.date !== defaultDate) query.set("date", params.date);
-  if (params.sido.length) query.set("sido", params.sido.join(","));
+  // 빈 값도 실어야 "지역 제한 없음" 과 첫 진입(기본 경기도)이 구분된다.
+  query.set("sido", params.sido.join(","));
   if (params.levels.length) query.set("level", params.levels.join(","));
   if (params.costs.length) query.set("cost", params.costs.join(","));
   if (params.timePreset) query.set("time", params.timePreset);

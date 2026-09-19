@@ -25,6 +25,8 @@ export function GpsButton({ active }: { active: boolean }) {
     next.delete("lat");
     next.delete("lng");
     next.delete("radius");
+    // sido 를 빼면 첫 진입과 같은 기본 지역(경기도)으로 돌아간다.
+    next.delete("sido");
     apply(next);
   }
 
@@ -41,6 +43,8 @@ export function GpsButton({ active }: { active: boolean }) {
         const next = new URLSearchParams(searchParams);
         next.set("lat", position.coords.latitude.toFixed(5));
         next.set("lng", position.coords.longitude.toFixed(5));
+        // 지역 칩이 켜져 있으면 반경보다 우선하므로(8.1), 내 주변을 켤 때는 비운다.
+        next.set("sido", "");
         setPending(false);
         apply(next);
       },

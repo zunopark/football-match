@@ -43,7 +43,8 @@ export default async function ExplorePage({ searchParams }: PageProps<"/">) {
     countByDate(dates),
   ]);
 
-  const narrowedByLocation = !params.sido.length && (params.coords || myRegionSigungu);
+  const narrowedByLocation =
+    params.sido.length > 0 || Boolean(params.coords) || Boolean(myRegionSigungu);
 
   return (
     <main className="mx-auto w-full max-w-6xl p-6">
