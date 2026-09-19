@@ -1,19 +1,17 @@
 import { redirect } from "next/navigation";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { sanitizeNext } from "@/lib/auth/redirect";
 import { getCurrentUser, isOnboarded } from "@/lib/auth/user";
 
 import { SocialLoginButtons } from "./social-login-buttons";
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const user = await getCurrentUser();
-  if (user) redirect(isOnboarded(user) ? "/" : "/onboarding");
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const { error, next } = await searchParams;
+  const safeNext = sanitizeNext(typeof next === "string" ? next : null);
 
-  const { error } = await searchParams;
+  const user = await getCurrentUser();
+  if (user) redirect(isOnboarded(user) ? (safeNext ?? "/") : "/onboarding");
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
@@ -25,7 +23,7 @@ export default async function LoginPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <SocialLoginButtons />
+          <SocialLoginButtons next={safeNext} />
           {error ? (
             <p className="text-sm text-destructive" role="alert">
               {error}

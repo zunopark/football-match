@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { consumePostLoginRedirect } from "@/lib/auth/guard";
 import { exchangeCodeForTokens, KAKAO_STATE_COOKIE } from "@/lib/auth/kakao";
 import { isOnboarded, syncUser } from "@/lib/auth/user";
 import { createClient } from "@/lib/supabase/server";
@@ -43,7 +44,10 @@ export async function GET(request: Request) {
     }
 
     const user = await syncUser(data.user);
-    return NextResponse.redirect(isOnboarded(user) ? `${origin}/` : `${origin}/onboarding`);
+    const next = await consumePostLoginRedirect();
+
+    if (!isOnboarded(user)) return NextResponse.redirect(`${origin}/onboarding`);
+    return NextResponse.redirect(`${origin}${next ?? "/"}`);
   } catch (error) {
     return loginWithError(origin, error instanceof Error ? error.message : "로그인에 실패했습니다.");
   }

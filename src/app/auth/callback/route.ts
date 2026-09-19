@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { consumePostLoginRedirect } from "@/lib/auth/guard";
 import { isOnboarded, syncUser } from "@/lib/auth/user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,7 +24,9 @@ export async function GET(request: Request) {
   }
 
   const user = await syncUser(data.user);
+  const next = await consumePostLoginRedirect();
 
   // 문서 2.1 — 최초 로그인 시 최소 회원정보 입력 화면으로 보낸다.
-  return NextResponse.redirect(isOnboarded(user) ? `${origin}/` : `${origin}/onboarding`);
+  if (!isOnboarded(user)) return NextResponse.redirect(`${origin}/onboarding`);
+  return NextResponse.redirect(`${origin}${next ?? "/"}`);
 }

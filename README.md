@@ -79,6 +79,12 @@ source .env && curl -s -X POST https://kauth.kakao.com/oauth/token \
 > 비즈니스 앱 전환 후 `account_email` 권한을 받으면 이 우회 구현을 제거하고
 > 구글과 동일하게 `signInWithOAuth` 로 되돌릴 수 있다.
 
+### 팀 로고 스토리지
+
+팀 로고는 Supabase Storage 의 `team-logos` 공개 버킷에 올라간다.
+버킷과 읽기 정책은 `drizzle/0003_teams_rls_and_storage.sql` 이 만들므로 `npm run db:migrate` 외에 콘솔 작업은 없다.
+업로드·삭제는 `SUPABASE_SERVICE_ROLE_KEY` 로만 수행한다.
+
 ### 어드민 비밀번호
 
 ```bash
@@ -100,7 +106,15 @@ npm run admin:verify   # 저장된 해시와 비밀번호가 일치하는지 확
 
 - [x] **Phase 1 — 프로젝트 기반 & 인증**: 프로젝트 초기화, Supabase 연결, Drizzle 마이그레이션 환경, 구글·카카오 로그인, `users` 동기화
 - [x] 이용약관 / 개인정보 처리방침 페이지 및 공통 푸터
-- [ ] Phase 2 — 팀 생성 & 팀원 관리
+- [x] **Phase 2 — 팀 생성 & 팀원 관리** (2026-09-19)
+  - 팀 생성·수정·비활성화·삭제, 팀 프로필(비로그인 조회 가능)
+  - 활동 지역 검색형 선택(시/도 + 시/군/구), 팀 레벨 1~5, 팀 로고 업로드(Supabase Storage)
+  - 가입 신청 링크 발급·재발급 → 신청 → 승인/거절, 대표 권한 위임, 팀 나가기
+  - 역할(대표 / 운영진 / 팀원)별 접근 제어, 비로그인 → 로그인 유도 공통 모듈
+- [ ] Phase 3 — 매칭 조건 & 메인 탐색 화면
+
+> 팀 역할은 DB 값 `owner` / `manager` / `member` 를 화면에서 **대표 / 운영진 / 팀원** 으로 표기한다.
+> 라벨은 `src/lib/teams/permissions.ts` 의 `ROLE_LABEL` 한 곳에서만 정의한다.
 
 > 약관·개인정보 처리방침은 일반적인 국내 플랫폼 서비스 구성을 따른 초안이며 법률 검토를 거치지 않았다.
 > 서비스명·문의처·시행일은 `src/lib/site.ts` 에서 관리한다.

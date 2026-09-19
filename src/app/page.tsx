@@ -1,42 +1,112 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { ErrorBanner } from "@/components/error-banner";
+import { TeamLogo } from "@/components/team-logo";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser, isOnboarded } from "@/lib/auth/user";
+import { formatRegion } from "@/lib/regions";
+import { formatLevel } from "@/lib/teams/level";
+import { ROLE_LABEL } from "@/lib/teams/permissions";
+import { getMyPendingRequests, getMyTeams, getOwnedTeam } from "@/lib/teams/queries";
 
-const PROVIDER_LABEL = { google: "구글", kakao: "카카오" } as const;
+export default async function HomePage({ searchParams }: PageProps<"/">) {
+  const { error } = await searchParams;
 
-export default async function HomePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!isOnboarded(user)) redirect("/onboarding");
 
+  // 문서 2.4 — 한 사용자는 여러 팀에 소속될 수 있고, 팀마다 역할이 다르다.
+  const [myTeams, pendingRequests, ownedTeam] = await Promise.all([
+    getMyTeams(user.id),
+    getMyPendingRequests(user.id),
+    getOwnedTeam(user.id),
+  ]);
+
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-6 p-6">
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-6">
+      <ErrorBanner message={typeof error === "string" ? error : undefined} />
+
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-heading text-lg">{user.nickname}님</h1>
+        <form action="/auth/signout" method="post">
+          <Button type="submit" variant="ghost" size="sm">
+            로그아웃
+          </Button>
+        </form>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>{user.nickname}님, 반갑습니다</CardTitle>
-          <CardDescription>Phase 1 — 프로젝트 기반 &amp; 인증</CardDescription>
+          <CardTitle>내 팀 {myTeams.length}개</CardTitle>
+          <CardDescription>
+            {/* 문서 2.2 — 한 사람은 한 팀의 대표만 맡을 수 있다. */}
+            {ownedTeam
+              ? "이미 대표를 맡고 있어 새 팀을 만들 수 없습니다."
+              : "팀을 만들면 자동으로 대표가 됩니다."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <dl className="grid grid-cols-[7rem_1fr] gap-y-2 text-sm">
-            <dt className="text-muted-foreground">사용자 ID</dt>
-            <dd className="break-all font-mono text-xs">{user.id}</dd>
-            <dt className="text-muted-foreground">로그인 수단</dt>
-            <dd>{PROVIDER_LABEL[user.socialProvider]}</dd>
-            <dt className="text-muted-foreground">상태</dt>
-            <dd>{user.status}</dd>
-            <dt className="text-muted-foreground">가입 일시</dt>
-            <dd>{user.createdAt.toLocaleString("ko-KR")}</dd>
-          </dl>
+          {myTeams.length ? (
+            <ul className="flex flex-col gap-3">
+              {myTeams.map(({ team, role }) => (
+                <li key={team.id}>
+                  <Link
+                    href={`/teams/${team.id}`}
+                    className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted"
+                  >
+                    <TeamLogo name={team.name} logoUrl={team.logoUrl} />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{team.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatRegion(team.regionSido, team.regionSigungu)} · {formatLevel(team.level)}
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="ml-auto">
+                      {ROLE_LABEL[role]}
+                    </Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">아직 소속된 팀이 없습니다.</p>
+          )}
 
-          <form action="/auth/signout" method="post">
-            <Button type="submit" variant="outline" className="w-full">
-              로그아웃
+          {ownedTeam ? null : (
+            <Button asChild className="self-start">
+              <Link href="/teams/new">팀 만들기</Link>
             </Button>
-          </form>
+          )}
         </CardContent>
       </Card>
+
+      {pendingRequests.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>승인 대기 중인 가입 신청</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="flex flex-col gap-3">
+              {pendingRequests.map(({ id, team }) => (
+                <li key={id}>
+                  <Link
+                    href={`/teams/${team.id}`}
+                    className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted"
+                  >
+                    <TeamLogo name={team.name} logoUrl={team.logoUrl} size="sm" />
+                    <span className="text-sm">{team.name}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">대기 중</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
     </main>
   );
 }
