@@ -1,6 +1,12 @@
 import { Chip } from "@/components/explore/chip";
 import { GpsButton } from "@/components/explore/gps-button";
-import { COST_LABEL, COST_TYPES, RADIUS_OPTIONS, TIME_PRESETS } from "@/lib/matching/constants";
+import { LevelFilterInfo } from "@/components/explore/level-filter-info";
+import {
+  COST_LABEL,
+  FILTER_COST_TYPES,
+  RADIUS_OPTIONS,
+  TIME_PRESETS,
+} from "@/lib/matching/constants";
 import {
   toggledHref,
   withHref,
@@ -11,10 +17,21 @@ import { LEVELS } from "@/lib/teams/level";
 
 const SIDO_LIST = Object.keys(REGIONS);
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
+function Group({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-sm font-medium">{title}</h3>
+      <h3 className="flex items-center gap-1 text-sm font-medium">
+        {title}
+        {action}
+      </h3>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </section>
   );
@@ -63,7 +80,7 @@ export function FilterPanel({
         ))}
       </Group>
 
-      <Group title="시간대">
+      <Group title="시간">
         {TIME_PRESETS.map((preset) => (
           <Chip
             key={preset.value}
@@ -77,7 +94,7 @@ export function FilterPanel({
         ))}
       </Group>
 
-      <Group title="상대 레벨">
+      <Group title="레벨" action={<LevelFilterInfo />}>
         {LEVELS.map((level) => (
           <Chip
             key={level}
@@ -90,7 +107,7 @@ export function FilterPanel({
       </Group>
 
       <Group title="경기 비용">
-        {COST_TYPES.map((cost) => (
+        {FILTER_COST_TYPES.map((cost) => (
           <Chip
             key={cost}
             href={toggledHref(params, defaultDate, "costs", cost)}

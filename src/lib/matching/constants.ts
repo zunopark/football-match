@@ -4,7 +4,7 @@ export type Coords = { lat: number; lng: number };
 
 /** 문서 16.3 cost_type */
 export const COST_LABEL: Record<CostType, string> = {
-  free: "무료",
+  free: "무료 초청",
   split: "구장비 분담",
   opponent: "상대 부담",
   negotiable: "협의",
@@ -12,6 +12,12 @@ export const COST_LABEL: Record<CostType, string> = {
 };
 
 export const COST_TYPES = Object.keys(COST_LABEL) as CostType[];
+
+/**
+ * 메인 화면 필터에 노출할 비용 조건.
+ * 등록 화면(F-04-02)은 16.3 의 5가지를 모두 받고, 필터만 자주 쓰는 둘로 좁힌다.
+ */
+export const FILTER_COST_TYPES: CostType[] = ["free", "split"];
 
 /** 문서 F-04-03 — 경기 방식은 11인제 고정이라 입력받지 않는다. */
 export const MATCH_FORMAT = "11인제";
@@ -23,12 +29,19 @@ export const RADIUS_OPTIONS = [5, 10, 20, 30, 50, 100] as const;
 /** 문서 8.1 — 상단 날짜 탭은 오늘 기준 최소 2주 */
 export const DATE_TAB_DAYS = 14;
 
-/** 문서 8.1 — 희망 시간대 프리셋 필터 */
+/**
+ * 문서 8.1 — 희망 시간 프리셋 필터.
+ * 경기 시작 시각을 2시간 구간으로 끊고, 마지막만 열어 둔다 (오후 8시 이후).
+ */
 export const TIME_PRESETS = [
-  { value: "morning", label: "오전", from: "00:00", to: "12:00" },
-  { value: "afternoon", label: "오후", from: "12:00", to: "18:00" },
-  { value: "evening", label: "18시 이후", from: "18:00", to: "24:00" },
-  { value: "night", label: "20시 이후", from: "20:00", to: "24:00" },
+  { value: "t06", label: "오전 6시", from: "06:00", to: "08:00" },
+  { value: "t08", label: "오전 8시", from: "08:00", to: "10:00" },
+  { value: "t10", label: "오전 10시", from: "10:00", to: "12:00" },
+  { value: "t12", label: "오후 12시", from: "12:00", to: "14:00" },
+  { value: "t14", label: "오후 2시", from: "14:00", to: "16:00" },
+  { value: "t16", label: "오후 4시", from: "16:00", to: "18:00" },
+  { value: "t18", label: "오후 6시", from: "18:00", to: "20:00" },
+  { value: "t20", label: "오후 8시 이후", from: "20:00", to: "24:00" },
 ] as const;
 
 export type TimePreset = (typeof TIME_PRESETS)[number]["value"];
