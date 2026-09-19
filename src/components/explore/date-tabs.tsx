@@ -16,7 +16,7 @@ export function DateTabs({
   defaultDate: string;
 }) {
   return (
-    <nav aria-label="경기 날짜" className="-mx-6 overflow-x-auto px-6">
+    <nav aria-label="경기 날짜" className="-mx-6 overflow-x-auto px-6 lg:mx-0 lg:px-0">
       <ul className="flex w-max gap-2">
         {dates.map((date) => {
           const { label, weekday } = formatDateTab(date);

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DateTabs } from "@/components/explore/date-tabs";
 import { FilterPanel } from "@/components/explore/filter-panel";
 import { MatchCard } from "@/components/explore/match-card";
+import { SeekingToggle } from "@/components/explore/seeking-toggle";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/user";
 import { buildDateTabs } from "@/lib/matching/constants";
@@ -45,10 +46,9 @@ export default async function ExplorePage({ searchParams }: PageProps<"/">) {
   const narrowedByLocation = !params.sido.length && (params.coords || myRegionSigungu);
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-6">
-      <DateTabs dates={dates} counts={counts} params={params} defaultDate={dates[0]} />
-
-      {/* 문서 8.1 — 데스크톱은 2컬럼, 모바일은 필터가 리스트 위로 접혀 올라간다. */}
+    <main className="mx-auto w-full max-w-6xl p-6">
+      {/* 문서 8.1 — 데스크톱은 2컬럼, 모바일은 필터가 리스트 위로 접혀 올라간다.
+          날짜 탭은 좌측 필터 폭이 끝나는 지점부터 시작하도록 우측 컬럼 안에 둔다. */}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <aside className="lg:sticky lg:top-6 lg:w-56 lg:shrink-0">
           <details className="lg:hidden" name="filters">
@@ -64,14 +64,17 @@ export default async function ExplorePage({ searchParams }: PageProps<"/">) {
           </div>
         </aside>
 
-        <section className="min-w-0 flex-1">
-          <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h1 className="font-heading text-base">경기 상대 {items.length}팀</h1>
-            {params.coords ? (
-              <span className="text-xs text-muted-foreground">
-                내 위치 {params.radiusKm}km 이내 또는 활동 지역 일치
-              </span>
-            ) : null}
+        <section className="flex min-w-0 flex-1 flex-col gap-4">
+          <DateTabs dates={dates} counts={counts} params={params} defaultDate={dates[0]} />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* 문서 8.1 — 레퍼런스의 "마감 가리기" 를 대체하는 토글 */}
+            <SeekingToggle params={params} defaultDate={dates[0]} />
+            <span className="text-xs text-muted-foreground">
+              {params.coords
+                ? `내 위치 ${params.radiusKm}km 이내 또는 활동 지역 일치 · ${items.length}팀`
+                : `경기 상대 ${items.length}팀`}
+            </span>
           </div>
 
           {items.length ? (

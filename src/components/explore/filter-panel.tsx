@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { Chip } from "@/components/explore/chip";
 import { GpsButton } from "@/components/explore/gps-button";
 import { COST_LABEL, COST_TYPES, RADIUS_OPTIONS, TIME_PRESETS } from "@/lib/matching/constants";
 import {
@@ -11,23 +10,6 @@ import { REGIONS } from "@/lib/regions";
 import { LEVELS } from "@/lib/teams/level";
 
 const SIDO_LIST = Object.keys(REGIONS);
-
-function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      scroll={false}
-      aria-pressed={active}
-      className={
-        active
-          ? "rounded-full bg-primary px-3 py-1 text-xs text-primary-foreground"
-          : "rounded-full border border-input px-3 py-1 text-xs hover:bg-muted"
-      }
-    >
-      {children}
-    </Link>
-  );
-}
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -117,16 +99,6 @@ export function FilterPanel({
             {COST_LABEL[cost]}
           </Chip>
         ))}
-      </Group>
-
-      {/* 문서 8.1 — 레퍼런스의 "마감 가리기" 를 대체하는 토글 */}
-      <Group title="표시">
-        <Chip
-          href={withHref(params, defaultDate, { includePaused: !params.includePaused })}
-          active={!params.includePaused}
-        >
-          매칭 구함만 보기
-        </Chip>
       </Group>
     </div>
   );
