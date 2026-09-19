@@ -16,7 +16,7 @@ import { randomUUID } from "node:crypto";
 
 import postgres from "postgres";
 
-import { geocodePlace } from "../src/lib/matching/geocode.ts";
+import { geocodePlace } from "@/lib/matching/geocode";
 
 export const SEED_MARKER = "[표본 데이터] 테스트용으로 만든 팀입니다.";
 
