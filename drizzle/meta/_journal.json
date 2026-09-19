@@ -36,6 +36,13 @@
       "when": 1789746221049,
       "tag": "0004_team_level",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789796188902,
+      "tag": "0005_match_conditions",
+      "breakpoints": true
     }
   ]
 }

@@ -79,6 +79,24 @@ source .env && curl -s -X POST https://kauth.kakao.com/oauth/token \
 > 비즈니스 앱 전환 후 `account_email` 권한을 받으면 이 우회 구현을 제거하고
 > 구글과 동일하게 `signInWithOAuth` 로 되돌릴 수 있다.
 
+### 카카오 로컬 API (경기 장소 좌표)
+
+매칭 조건의 경기 장소를 좌표로 바꿔 GPS 반경 추천(문서 7.1)에 쓴다.
+카카오 개발자 콘솔 **[내 애플리케이션] > [제품 설정] > [카카오맵]** 을 **활성화 ON** 해야 한다.
+꺼져 있으면 아래처럼 응답하고, 이때는 좌표 없이 저장되어 활동 지역 기준으로만 노출된다(기능은 계속 동작한다).
+
+```
+{"errorType":"NotAuthorizedError","message":"App(...) disabled OPEN_MAP_AND_LOCAL service."}
+```
+
+설정이 끝났는지는 아래로 확인한다. `documents` 에 좌표가 나오면 정상이다.
+
+```bash
+source .env && curl -s -G https://dapi.kakao.com/v2/local/search/keyword.json \
+  --data-urlencode "query=수원월드컵경기장" \
+  -H "Authorization: KakaoAK $KAKAO_REST_API_KEY"
+```
+
 ### 팀 로고 스토리지
 
 팀 로고는 Supabase Storage 의 `team-logos` 공개 버킷에 올라간다.
@@ -111,7 +129,11 @@ npm run admin:verify   # 저장된 해시와 비밀번호가 일치하는지 확
   - 활동 지역 검색형 선택(시/도 + 시/군/구), 팀 레벨 1~5, 팀 로고 업로드(Supabase Storage)
   - 가입 신청 링크 발급·재발급 → 신청 → 승인/거절, 대표 권한 위임, 팀 나가기
   - 역할(대표 / 운영진 / 팀원)별 접근 제어, 비로그인 → 로그인 유도 공통 모듈
-- [ ] Phase 3 — 매칭 조건 & 메인 탐색 화면
+- [x] **Phase 3 — 매칭 조건 & 메인 탐색 화면** (2026-09-19)
+  - 날짜별 매칭 조건 등록·수정·구함/내림 전환, 원하는 상대 레벨·비용·협의 사항
+  - 메인 탐색 화면: 날짜 탭(2주) + 지역/시간대/레벨/비용 필터 + 리스트 (비로그인 조회 가능)
+  - GPS 반경(기본 30km, 조절 가능) OR 활동 지역 일치 노출, 가까운 순 정렬
+- [ ] Phase 4 — 매칭 신청 플로우
 
 > 팀 역할은 DB 값 `owner` / `manager` / `member` 를 화면에서 **대표 / 운영진 / 팀원** 으로 표기한다.
 > 라벨은 `src/lib/teams/permissions.ts` 의 `ROLE_LABEL` 한 곳에서만 정의한다.

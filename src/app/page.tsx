@@ -1,112 +1,102 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { ErrorBanner } from "@/components/error-banner";
-import { TeamLogo } from "@/components/team-logo";
-import { Badge } from "@/components/ui/badge";
+import { DateTabs } from "@/components/explore/date-tabs";
+import { FilterPanel } from "@/components/explore/filter-panel";
+import { MatchCard } from "@/components/explore/match-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentUser, isOnboarded } from "@/lib/auth/user";
-import { formatRegion } from "@/lib/regions";
-import { formatLevel } from "@/lib/teams/level";
-import { ROLE_LABEL } from "@/lib/teams/permissions";
-import { getMyPendingRequests, getMyTeams, getOwnedTeam } from "@/lib/teams/queries";
+import { getCurrentUser } from "@/lib/auth/user";
+import { buildDateTabs } from "@/lib/matching/constants";
+import { countByDate, findMatchCandidates, getMyTeamIds } from "@/lib/matching/queries";
+import { parseExploreParams } from "@/lib/matching/search-params";
+import { getMyTeams } from "@/lib/teams/queries";
 
-export default async function HomePage({ searchParams }: PageProps<"/">) {
-  const { error } = await searchParams;
+/**
+ * 문서 8.1 메인 화면 — F-05(추천)와 F-06(검색)을 한 화면에서 겸한다.
+ * 비로그인도 둘러볼 수 있고, 매칭 신청 같은 액션에서만 로그인을 요구한다 (문서 2.2).
+ */
+export default async function ExplorePage({ searchParams }: PageProps<"/">) {
+  const raw = await searchParams;
+  const dates = buildDateTabs();
+  const params = parseExploreParams(raw);
 
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  if (!isOnboarded(user)) redirect("/onboarding");
 
-  // 문서 2.4 — 한 사용자는 여러 팀에 소속될 수 있고, 팀마다 역할이 다르다.
-  const [myTeams, pendingRequests, ownedTeam] = await Promise.all([
-    getMyTeams(user.id),
-    getMyPendingRequests(user.id),
-    getOwnedTeam(user.id),
+  // 문서 7.1 — GPS 를 거부했을 때의 fallback 기준이 되는 내 팀 활동 지역
+  const myTeams = user ? await getMyTeams(user.id) : [];
+  const myTeamIds = user ? await getMyTeamIds(user.id) : [];
+  const myRegionSigungu = myTeams[0]?.team.regionSigungu ?? null;
+
+  const [items, counts] = await Promise.all([
+    findMatchCandidates({
+      date: params.date,
+      sido: params.sido,
+      levels: params.levels,
+      costs: params.costs,
+      timePreset: params.timePreset,
+      coords: params.coords,
+      radiusKm: params.radiusKm,
+      includePaused: params.includePaused,
+      myTeamIds,
+      myRegionSigungu,
+    }),
+    countByDate(dates),
   ]);
 
+  const narrowedByLocation = !params.sido.length && (params.coords || myRegionSigungu);
+
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-6">
-      <ErrorBanner message={typeof error === "string" ? error : undefined} />
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-6">
+      <DateTabs dates={dates} counts={counts} params={params} defaultDate={dates[0]} />
 
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-heading text-lg">{user.nickname}님</h1>
-        <form action="/auth/signout" method="post">
-          <Button type="submit" variant="ghost" size="sm">
-            로그아웃
-          </Button>
-        </form>
-      </div>
+      {/* 문서 8.1 — 데스크톱은 2컬럼, 모바일은 필터가 리스트 위로 접혀 올라간다. */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <aside className="lg:sticky lg:top-6 lg:w-56 lg:shrink-0">
+          <details className="lg:hidden" name="filters">
+            <summary className="cursor-pointer rounded-lg border border-input px-3 py-2 text-sm">
+              필터
+            </summary>
+            <div className="pt-4">
+              <FilterPanel params={params} defaultDate={dates[0]} />
+            </div>
+          </details>
+          <div className="hidden lg:block">
+            <FilterPanel params={params} defaultDate={dates[0]} />
+          </div>
+        </aside>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>내 팀 {myTeams.length}개</CardTitle>
-          <CardDescription>
-            {/* 문서 2.2 — 한 사람은 한 팀의 대표만 맡을 수 있다. */}
-            {ownedTeam
-              ? "이미 대표를 맡고 있어 새 팀을 만들 수 없습니다."
-              : "팀을 만들면 자동으로 대표가 됩니다."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {myTeams.length ? (
+        <section className="min-w-0 flex-1">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h1 className="font-heading text-base">경기 상대 {items.length}팀</h1>
+            {params.coords ? (
+              <span className="text-xs text-muted-foreground">
+                내 위치 {params.radiusKm}km 이내 또는 활동 지역 일치
+              </span>
+            ) : null}
+          </div>
+
+          {items.length ? (
             <ul className="flex flex-col gap-3">
-              {myTeams.map(({ team, role }) => (
-                <li key={team.id}>
-                  <Link
-                    href={`/teams/${team.id}`}
-                    className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted"
-                  >
-                    <TeamLogo name={team.name} logoUrl={team.logoUrl} />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{team.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatRegion(team.regionSido, team.regionSigungu)} · {formatLevel(team.level)}
-                      </span>
-                    </div>
-                    <Badge variant="outline" className="ml-auto">
-                      {ROLE_LABEL[role]}
-                    </Badge>
-                  </Link>
-                </li>
+              {items.map((item) => (
+                <MatchCard key={item.condition.id} item={item} />
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">아직 소속된 팀이 없습니다.</p>
+            <div className="flex flex-col items-start gap-3 rounded-xl p-6 ring-1 ring-foreground/10">
+              <p className="text-sm text-muted-foreground">
+                이 날짜에 조건에 맞는 팀이 없습니다.
+                {narrowedByLocation
+                  ? " 지역 필터를 넓히거나 다른 날짜를 골라보세요."
+                  : " 다른 날짜를 골라보세요."}
+              </p>
+              {myTeams.length ? (
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/teams/${myTeams[0].team.id}/matching`}>우리 팀 매칭 올리기</Link>
+                </Button>
+              ) : null}
+            </div>
           )}
-
-          {ownedTeam ? null : (
-            <Button asChild className="self-start">
-              <Link href="/teams/new">팀 만들기</Link>
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      {pendingRequests.length ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>승인 대기 중인 가입 신청</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="flex flex-col gap-3">
-              {pendingRequests.map(({ id, team }) => (
-                <li key={id}>
-                  <Link
-                    href={`/teams/${team.id}`}
-                    className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted"
-                  >
-                    <TeamLogo name={team.name} logoUrl={team.logoUrl} size="sm" />
-                    <span className="text-sm">{team.name}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">대기 중</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      ) : null}
+        </section>
+      </div>
     </main>
   );
 }

@@ -116,9 +116,14 @@ export default async function TeamPage({ params, searchParams }: PageProps<"/tea
           {/* 문서 2.3 — 역할에 따라 보이는 메뉴가 달라진다. */}
           <div className="flex flex-wrap gap-2">
             {membership && canManageTeamProfile(membership.role) ? (
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/teams/${team.id}/edit`}>팀 정보 수정</Link>
-              </Button>
+              <>
+                <Button asChild size="sm">
+                  <Link href={`/teams/${team.id}/matching`}>매칭 구하기</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/teams/${team.id}/edit`}>팀 정보 수정</Link>
+                </Button>
+              </>
             ) : null}
             {canManage ? (
               <Button asChild variant="outline" size="sm">
