@@ -13,6 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "seed": "tsx scripts/seed-sample.mts seed",
+    "seed:clean": "tsx scripts/seed-sample.mts clean",
     "admin:hash": "tsx scripts/admin-password.mts hash",
     "admin:verify": "tsx scripts/admin-password.mts verify"
   },
